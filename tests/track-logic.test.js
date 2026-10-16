@@ -21,6 +21,7 @@ test("countdown includes required time accumulated before resume", () => {
 test("past target shows awaiting server reconciliation and never locally completes", () => {
   const s = timerSnapshot(base, at + 360000);
   assert.equal(s.label, "TARGET REACHED · AWAITING SYNC");
+  assert.equal(s.milliseconds, 0);
   assert.equal(s.running, true);
 });
 test("count-up combines previous and current sessions", () => {
