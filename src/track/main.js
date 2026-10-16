@@ -5,6 +5,7 @@ const desktopHost = require("../main/desktop-host");
 const desktopInput = require("../main/desktop-input");
 const config = require("../main/config");
 const { TrackClient } = require("./track-client");
+const { openTrackAuthorization } = require("./oauth-window");
 
 const ROOT = path.join(__dirname, "../..");
 const HTML = path.join(__dirname, "index.html");
@@ -32,6 +33,14 @@ const client = new TrackClient((state) => {
     state.active ? "Track · " + (state.active.trackTitle || "Focus") : "Track Desktop"
   );
   refreshMenu();
+}, (authorizationUrl, redirectUri, waitForCode) => {
+  openControls();
+  return openTrackAuthorization({
+    authorizationUrl,
+    redirectUri,
+    waitForCode,
+    parent: controls,
+  });
 });
 function restrictNavigation(win) {
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
