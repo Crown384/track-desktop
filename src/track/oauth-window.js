@@ -1,13 +1,15 @@
 "use strict";
 
+const { randomUUID } = require("node:crypto");
 const { BrowserWindow, session } = require("electron");
 const { isAllowedAuthNavigation } = require("./oauth-navigation");
-
-const PARTITION = "track-desktop-sign-in";
 
 function openTrackAuthorization({ authorizationUrl, redirectUri, waitForCode, parent }) {
   return new Promise((resolve, reject) => {
     let settled = false;
+    // Use a fresh, memory-only cookie jar on every sign-in. Disconnecting
+    // cannot accidentally reuse a previously authenticated web session.
+    const partition = "track-desktop-sign-in-" + randomUUID();
     const options = {
       width: 640,
       height: 780,
@@ -26,11 +28,11 @@ function openTrackAuthorization({ authorizationUrl, redirectUri, waitForCode, pa
         sandbox: true,
         webSecurity: true,
         devTools: false,
-        partition: PARTITION,
+        partition,
       },
     };
     const win = new BrowserWindow(options);
-    const isolatedSession = session.fromPartition(PARTITION);
+    const isolatedSession = session.fromPartition(partition);
     isolatedSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
 
     function complete(error, code) {
