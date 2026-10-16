@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Track Desktop</title>
+  <link rel="stylesheet" href="./ui.css">
+  <script src="./logic.js" defer></script>
+  <script src="./renderer.js" defer></script>
+</head>
+<body class="min-h-screen select-none overflow-hidden bg-[#080a10] font-sans text-white antialiased">
+  <div aria-hidden="true" class="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#0e1b1a] via-[#080a10] to-[#1a1022]"></div>
+  <div aria-hidden="true" class="pointer-events-none absolute left-[25%] top-[10%] h-[65vh] w-[50vw] rounded-full bg-emerald-400/8 blur-3xl"></div>
+  <div aria-hidden="true" class="pointer-events-none absolute right-[-5%] bottom-[-20%] h-[60vh] w-[45vw] rounded-full bg-violet-500/10 blur-3xl"></div>
+
+  <section id="wallpaper" class="relative flex min-h-screen flex-col items-center justify-between px-12 py-12">
+    <div class="flex w-full items-center justify-between">
+      <div class="flex items-center gap-3 text-white/70">
+        <span aria-hidden="true" class="h-3 w-3 rounded-sm bg-emerald-300 rotate-45"></span>
+        <span class="text-sm font-semibold uppercase tracking-[.3em]">Track</span>
+      </div>
+      <div id="wall-status" class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium tracking-wide text-white/60">Not connected</div>
+    </div>
+
+    <div data-open-controls="true" class="relative z-10 w-full max-w-5xl cursor-pointer rounded-[2.5rem] border border-white/10 bg-white/5 px-8 py-16 text-center shadow-2xl shadow-black/10 backdrop-blur-md transition hover:bg-white/10">
+      <p id="wall-kicker" class="mb-5 text-xs font-semibold uppercase tracking-[.38em] text-emerald-200/80">Stay intentional</p>
+      <h1 id="wall-time" class="font-mono text-[clamp(5rem,13vw,13rem)] font-light leading-none tracking-[-.075em] tabular-nums">00:00</h1>
+      <h2 id="wall-title" class="mt-8 truncate text-[clamp(1.5rem,3vw,3.25rem)] font-medium tracking-tight">Your time. Your focus.</h2>
+      <p id="wall-subtitle" class="mt-4 text-sm text-white/50">Connect your Track account to see your live focus.</p>
+      <div class="mx-auto mt-10 h-[2px] w-36 overflow-hidden rounded-full bg-white/10"><div id="wall-progress" class="h-full w-0 rounded-full bg-emerald-300 transition-all duration-500"></div></div>
+    </div>
+
+    <div class="flex w-full items-end justify-between text-sm text-white/50">
+      <div><p id="wall-date" class="text-white/80"></p><p class="mt-2 text-xs">Time, on purpose.</p></div>
+      <div class="text-right"><p id="wall-clock" class="font-mono text-2xl text-white/85 tabular-nums">--:--</p><p class="mt-2 text-xs">Click the timer to open controls</p></div>
+    </div>
+  </section>
+
+  <main id="controls" class="relative mx-auto hidden h-screen max-w-3xl overflow-y-auto px-7 py-8">
+    <header class="flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3"><span class="h-3 w-3 rotate-45 rounded-sm bg-emerald-300"></span><h1 class="text-lg font-semibold tracking-tight">Track Desktop</h1></div>
+      <span id="connection" class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white/65">Disconnected</span>
+    </header>
+    <section class="mt-8 rounded-[2rem] border border-white/10 bg-white/5 p-7 shadow-xl backdrop-blur-xl">
+      <div class="flex items-start justify-between gap-6">
+        <div class="min-w-0">
+          <p id="panel-kicker" class="text-xs font-semibold uppercase tracking-[.25em] text-emerald-200/75">Today’s focus</p>
+          <h2 id="panel-title" class="mt-3 truncate text-2xl font-semibold tracking-tight">Ready when you are</h2>
+        </div>
+        <span class="rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs text-white/60">LIVE</span>
+      </div>
+      <div id="panel-time" class="mt-8 font-mono text-7xl font-light tracking-[-.075em] tabular-nums sm:text-8xl">00:00</div>
+      <p id="panel-caption" class="mt-3 text-xs uppercase tracking-[.2em] text-white/55">No active Track</p>
+      <div class="mt-7 flex flex-wrap gap-3">
+        <button id="pause" data-action="pause" class="hidden rounded-2xl bg-white px-6 py-3 font-semibold text-[#090b10] transition hover:bg-white/85 disabled:cursor-not-allowed disabled:opacity-40">Pause Track</button>
+        <button id="connect" data-action="connect" class="rounded-2xl bg-emerald-300 px-6 py-3 font-semibold text-[#06211c] transition hover:bg-emerald-200 disabled:opacity-50">Connect Track account</button>
+        <button data-action="refresh" class="rounded-2xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-medium text-white/85 transition hover:bg-white/10">Refresh</button>
+      </div>
+    </section>
+    <p id="notice" role="status" class="mt-5 hidden rounded-xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100"></p>
+    <section class="mt-8">
+      <div class="mb-4 flex items-center justify-between"><h3 class="text-sm font-semibold uppercase tracking-[.22em] text-white/75">Today’s Tracks</h3><span id="today-label" class="text-xs text-white/50"></span></div>
+      <div id="tracks" class="space-y-2"><p class="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/50">Connect to see your Tracks.</p></div>
+    </section>
+    <footer class="flex items-center justify-between gap-4 py-8 text-xs text-white/45">
+      <p>TrackOS owns timers, completion and Sin Hours.</p>
+      <div class="flex gap-4">
+        <button data-action="open-web" class="hover:text-white">Open Track</button>
+        <button id="disconnect" data-action="disconnect" class="hidden hover:text-white">Disconnect</button>
+      </div>
+    </footer>
+  </main>
+</body>
+</html>
