@@ -6,7 +6,7 @@ This branch turns the Live Wallpaper Dashboard fork into an authenticated TrackO
 
 - Electron wallpaper behind desktop icons using the fork's WorkerW / Progman Win32 integration; ordinary desktop icons and clicks remain managed by Explorer.
 - Click the countdown on empty desktop space or use the tray menu to open normal Track controls.
-- OAuth 2.1 public-client sign-in via TrackOS's current /api/oauth/register, /oauth/authorize and /api/oauth/token endpoints, using a random loopback callback, S256 PKCE and CSRF state. The browser handles the email-code sign-in.
+- In-app email verification: click Connect Track account to open a dedicated Track Desktop sign-in modal. Enter email, receive the existing Mailjet code, type the code inside the app, then approve access. The sign-in UI reuses TrackOS's hosted OAuth page in an isolated, sandboxed Electron window; it does **not** open Chrome/Edge. OAuth 2.1 public-client sign-in still uses /api/oauth/register, /oauth/authorize and /api/oauth/token with a one-shot loopback callback, S256 PKCE and CSRF state.
 - Store refresh/access tokens only in Electron safeStorage-encrypted user data (never renderer IPC or localStorage). Request read/write OAuth scopes and offline_access.
 - Connect to existing /mcp server using streamable HTTP and its existing get_active_track, get_todays_tracks, start_track, pause_active_track, and set_todo_completed tools.
 - Show active countdown / count-up from the server's resumedAt and accumulated milliseconds; refresh authoritative data, preserve previous snapshot but disable all writes when offline.
@@ -32,6 +32,7 @@ Credentials are automatically isolated per machine. They are never committed and
 - Today is determined by the **server-side account timezone** and get_todays_tracks result. Do not use the host PC date to decide what may start.
 - Never calculate or submit a manual Track completion when the count reaches zero. Overtime and deadline/daily-reset boundaries are TrackOS responsibilities.
 - Only one active timed/count-up Track: start_track refuses switches if another Track is active.
+- TrackOS still hosts the secure sign-in form: the desktop presents that page within its sandboxed window instead of rebuilding email-code verification. A production UX pass may eventually provide a dedicated desktop-themed authorization page.
 - The original wallpaper customizer, calendar, alarms and third-party wallpaper search are not surfaced in this Track-specific entry point. They are deliberately out of scope rather than duplicated.
 - Upstream GitHub Releases auto-update is not enabled or configured for this fork, and original upstream release scripts were removed from package.json. The inherited release workflow must be disabled or rebuilt for this fork before a public release. Do not publish under the original author's app ID / releases.
 - The existing upstream icon assets are temporary placeholders. Replace with licensed Track brand assets before public distribution.
@@ -40,7 +41,7 @@ Credentials are automatically isolated per machine. They are never committed and
 
 - Fresh npm install **and regenerate/commit package-lock.json** after adding Tailwind dependencies; test on a clean Windows runner, not only a developer machine.
 - Run npm test, npm run build:styles, npm run dist; launch installer on Windows 10 and 11 (including 24H2+), verify desktop icon click/drag/right-click, Explorer restart, DPI scaling, multiple-monitor and taskbar interactions.
-- Complete OAuth loopback PKCE sign-in, consent, refresh-token rotation, revoked token, timeout/cancel, and reconnect tests against staging TrackOS server.
+- Complete **in-app** email send/code entry, consent, OAuth loopback PKCE, refresh-token rotation, revoked token, timeout/cancel, and reconnect tests against staging TrackOS server. Verify the entire login occurs in Track Desktop, external navigation is blocked, and the modal closes after successful authorization.
 - Verify live sync and cross-device start/pause/start-resume with web/mobile, timezone reset, count-up/overtime, To-do completion and server-reconciled boundaries.
 - Inspect the installed binary and test auto-start/pause and uninstall wallpaper restoration. Keep this PR draft until provider/browser and Windows QA are complete.
 
