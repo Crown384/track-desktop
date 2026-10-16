@@ -55,12 +55,14 @@ function callbackListener() {
     let finished = false;
     let server;
     let timeout;
+    let rejectCallback;
     const result = new Promise((done, fail) => {
+      rejectCallback = fail;
       server = http.createServer((req, res) => {
         const u = new URL(req.url || "/", "http://127.0.0.1");
         const good = req.method === "GET" && u.pathname === "/callback" && u.searchParams.get("state") === state;
         res.writeHead(good ? 200 : 400, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
-        res.end(good ? "<!doctype html><title>Track connected</title><p>Track is connected. You may close this tab.</p>" :
+        res.end(good ? "<!doctype html><title>Return to Track Desktop</title><p>Return to Track Desktop to finish connecting.</p>" :
           "<!doctype html><title>Invalid callback</title><p>Invalid connection response.</p>");
         if (!good || finished) return;
         finished = true;
@@ -75,7 +77,7 @@ function callbackListener() {
     server.listen(0, "127.0.0.1", () => {
       timeout = setTimeout(() => {
         server.close();
-        reject(new Error("Track sign-in timed out"));
+        rejectCallback(new Error("Track sign-in timed out"));
       }, 3 * 60 * 1000);
       const redirectUri = "http://127.0.0.1:" + server.address().port + "/callback";
       resolve({
@@ -100,6 +102,7 @@ class TrackClient {
     this.pollPromise = null;
     this.timer = null;
     this.lastTracksAt = 0;
+    this.epoch = 0;
   }
   emit(patch) {
     Object.assign(this.state, patch);
@@ -120,6 +123,7 @@ class TrackClient {
   async connect() {
     if (this.credentials) return this.sync(true);
     const verifier = random(48);
+    const epoch = ++this.epoch;
     const callback = await callbackListener();
     this.emit({ status: "connecting", error: null });
     try {
@@ -151,6 +155,7 @@ class TrackClient {
         method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: form,
       }));
       if (!token.access_token || !token.refresh_token) throw new Error("Track returned invalid credentials");
+      if (epoch !== this.epoch) throw new Error("Track connection was cancelled");
       this.credentials = {
         clientId: registration.client_id, accessToken: token.access_token,
         refreshToken: token.refresh_token,
@@ -167,6 +172,7 @@ class TrackClient {
     }
   }
   async disconnect() {
+    this.epoch += 1;
     this.credentials = null;
     this.sessionId = null;
     this.initialized = false;
@@ -178,14 +184,16 @@ class TrackClient {
     if (this.credentials.expiresAt > Date.now() + 60000) return this.credentials.accessToken;
     if (this.refreshPromise) return this.refreshPromise;
     this.refreshPromise = (async () => {
+      const current = this.credentials;
       const form = new URLSearchParams({
-        grant_type: "refresh_token", client_id: this.credentials.clientId,
-        refresh_token: this.credentials.refreshToken, resource: BASE,
+        grant_type: "refresh_token", client_id: current.clientId,
+        refresh_token: current.refreshToken, resource: BASE,
       });
       const t = await jsonOrError(await request(BASE + "/api/oauth/token", {
         method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: form,
       }));
       if (!t.access_token || !t.refresh_token) throw new Error("Track session expired. Reconnect your account.");
+      if (this.credentials !== current) throw new Error("Track session was disconnected");
       this.credentials = {
         ...this.credentials, accessToken: t.access_token,
         refreshToken: t.refresh_token, expiresAt: Date.now() + (Number(t.expires_in) || 3600) * 1000,
@@ -249,6 +257,7 @@ class TrackClient {
   async sync(force = false) {
     if (!this.credentials) return;
     if (this.pollPromise) return this.pollPromise;
+    const epoch = this.epoch;
     this.pollPromise = (async () => {
       try {
         const activeData = await this.callTool("get_active_track");
@@ -259,10 +268,12 @@ class TrackClient {
           next.date = todayData.date || null;
           this.lastTracksAt = Date.now();
         }
-        this.emit(next);
+        if (epoch === this.epoch) this.emit(next);
       } catch (error) {
-        this.initialized = false;
-        this.emit({ status: "offline", stale: true, error: error.message });
+        if (epoch === this.epoch) {
+          this.initialized = false;
+          this.emit({ status: "offline", stale: true, error: error.message });
+        }
       }
     })();
     try { await this.pollPromise; } finally { this.pollPromise = null; }
