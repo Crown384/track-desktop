@@ -4,7 +4,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const http = require("node:http");
 const path = require("node:path");
-const { app, safeStorage, shell } = require("electron");
+const { app, safeStorage } = require("electron");
 const { normalizeTracks } = require("./logic");
 
 const BASE = (process.env.TRACK_DESKTOP_ORIGIN || "https://track.pama.company").replace(/\/+$/, "");
@@ -95,8 +95,12 @@ function callbackListener() {
 }
 
 class TrackClient {
-  constructor(onChange) {
+  constructor(onChange, authorizeInApp) {
     this.onChange = onChange;
+    if (typeof authorizeInApp !== "function") {
+      throw new Error("Track Desktop requires an in-app authorization window.");
+    }
+    this.authorizeInApp = authorizeInApp;
     this.credentials = null;
     this.state = { status: "disconnected", stale: false, active: null, tracks: [], date: null, error: null, updatedAt: null };
     this.sessionId = null;
@@ -156,8 +160,11 @@ class TrackClient {
         code_challenge_method: "S256", state: callback.state,
         resource: BASE, scope: "track.read track.write offline_access",
       }).forEach(([key, value]) => url.searchParams.set(key, value));
-      await shell.openExternal(url.toString());
-      const code = await callback.wait;
+      // Email entry, Mailjet verification-code entry, and consent all stay
+      // inside Track Desktop's isolated authentication window.
+      const code = await this.authorizeInApp(
+        url.toString(), callback.redirectUri, callback.wait
+      );
       const form = new URLSearchParams({
         grant_type: "authorization_code", code, client_id: registration.client_id,
         redirect_uri: callback.redirectUri, code_verifier: verifier, resource: BASE,
