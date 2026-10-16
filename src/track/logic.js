@@ -32,7 +32,9 @@ function timerSnapshot(raw, now = Date.now()) {
   const overtime = Math.max(0, progressed - active.target) + active.overtimeBefore;
   return {
     ...active,
-    milliseconds: remaining > 0 ? remaining : overtime,
+    // The public MCP snapshot does not expose the effective overtime policy.
+    // Freeze at zero until TrackOS reconciles or returns a new authoritative state.
+    milliseconds: remaining,
     label: remaining > 0 ? "TIME REMAINING" : "TARGET REACHED · AWAITING SYNC",
     running: true,
     overtime: remaining === 0 && overtime > 0,
