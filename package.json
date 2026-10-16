@@ -1,19 +1,22 @@
 {
-  "name": "live-wallpaper-dashboard",
-  "productName": "Live Wallpaper Dashboard",
-  "version": "1.2.2",
-  "description": "A live desktop wallpaper for Windows with clock, weather, calendar, reminders and wallpaper search.",
-  "author": "Rabiya Tahir",
+  "name": "track-desktop",
+  "productName": "Track Desktop",
+  "version": "0.1.0",
+  "description": "TrackOS live Windows desktop launcher and wallpaper.",
+  "author": "Pama Technologies Ltd (based on the work of Rabiya Tahir)",
   "license": "MIT",
-  "main": "src/main/main.js",
+  "main": "src/track/main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win nsis --publish never",
-    "release": "electron-builder --win nsis --publish always"
+    "build:styles": "tailwindcss -i ./src/track/tailwind.css -o ./src/track/ui.css --minify",
+    "prestart": "npm run build:styles",
+    "predist": "npm run build:styles",
+    "test": "node --test tests/track-logic.test.js",
+    "dist": "electron-builder --win nsis --publish never"
   },
   "build": {
-    "appId": "com.rabiyatahir.livewallpaperdashboard",
-    "productName": "Live Wallpaper Dashboard",
+    "appId": "company.pama.track.desktop",
+    "productName": "Track Desktop",
     "files": [
       "src/**/*",
       "build/icon.png",
@@ -34,17 +37,9 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Live Wallpaper Dashboard",
-      "artifactName": "Live-Wallpaper-Dashboard-Setup-${version}.${ext}"
-    },
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "rabiya43",
-        "repo": "custom-wallpaper",
-        "releaseType": "release"
-      }
-    ]
+      "shortcutName": "Track Desktop",
+      "artifactName": "Track-Desktop-Setup-${version}.${ext}"
+    }
   },
   "dependencies": {
     "chrono-node": "^2.10.1",
@@ -54,6 +49,8 @@
   },
   "devDependencies": {
     "electron": "^44.4.5",
-    "electron-builder": "^26.15.3"
+    "electron-builder": "^26.15.3",
+    "@tailwindcss/cli": "^4.1.0",
+    "tailwindcss": "^4.1.0"
   }
 }
