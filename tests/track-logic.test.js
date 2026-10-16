@@ -41,3 +41,23 @@ test("untrusted track color is rejected and input list bounded", () => {
   assert.equal(track.color, null);
   assert.deepEqual(normalizeTracks(null), []);
 });
+
+const { isAllowedAuthNavigation } = require("../src/track/oauth-navigation");
+
+const authorize = "https://track.pama.company/oauth/authorize?state=secure-abc&client_id=track-test";
+const callback = "http://127.0.0.1:55123/callback";
+
+test("desktop login accepts only TrackOS sign-in and expected OAuth callback", () => {
+  assert.equal(isAllowedAuthNavigation(authorize, authorize, callback), true);
+  assert.equal(isAllowedAuthNavigation("https://track.pama.company/oauth/authorize?state=secure-abc", authorize, callback), true);
+  assert.equal(isAllowedAuthNavigation("http://127.0.0.1:55123/callback?state=secure-abc&code=opaque", authorize, callback), true);
+});
+test("desktop login rejects external pages, untrusted local ports and forged callback state", () => {
+  assert.equal(isAllowedAuthNavigation("https://evil.example/sign-in", authorize, callback), false);
+  assert.equal(isAllowedAuthNavigation("file:///C:/Windows/system.ini", authorize, callback), false);
+  assert.equal(isAllowedAuthNavigation("javascript:alert(1)", authorize, callback), false);
+  assert.equal(isAllowedAuthNavigation("http://localhost:55123/callback?state=secure-abc", authorize, callback), false);
+  assert.equal(isAllowedAuthNavigation("http://127.0.0.1:55124/callback?state=secure-abc", authorize, callback), false);
+  assert.equal(isAllowedAuthNavigation("http://127.0.0.1:55123/callback?state=forged&code=opaque", authorize, callback), false);
+  assert.equal(isAllowedAuthNavigation("http://127.0.0.1:55123/other?state=secure-abc", authorize, callback), false);
+});
