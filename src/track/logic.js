@@ -54,9 +54,13 @@ function normalizeTracks(value) {
       title: track.title.slice(0, 120),
       mode: ["timed", "count_up", "todo"].includes(track.mode) ? track.mode : "timed",
       state: String(track.state || track.status || ""),
-      completed: track.completed === true || track.todoCompleted === true || Boolean(track.todoCompletedOn),
-      durationMs: finiteNonNegative(track.targetDurationMs),
+      completed: track.completed === true || track.todoCompleted === true ||
+        track.state === "completed" || track.state === "finalized",
+      durationMs: finiteNonNegative(track.targetDurationMs ??
+        (typeof track.targetDurationMinutes === "number" ? track.targetDurationMinutes * 60000 : 0)),
       color: /^#[0-9a-fA-F]{6}$/.test(track.color || "") ? track.color : null,
     }));
 }
-module.exports = { normalizeActive, timerSnapshot, formatDuration, normalizeTracks };
+const TrackLogic = { normalizeActive, timerSnapshot, formatDuration, normalizeTracks };
+if (typeof module !== "undefined" && module.exports) module.exports = TrackLogic;
+else if (typeof window !== "undefined") window.TrackLogic = TrackLogic;
