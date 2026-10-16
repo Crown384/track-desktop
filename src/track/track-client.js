@@ -72,7 +72,11 @@ function callbackListener() {
         else if (!u.searchParams.get("code")) fail(new Error("Missing Track authorization code"));
         else done(u.searchParams.get("code"));
       });
-      server.on("error", fail);
+      server.on("error", (error) => {
+        // A listen failure must reject creation, not an unobserved callback promise.
+        if (!server.listening) reject(error);
+        else fail(error);
+      });
     });
     server.listen(0, "127.0.0.1", () => {
       timeout = setTimeout(() => {
