@@ -99,6 +99,7 @@ class TrackClient {
     this.sequence = 0;
     this.initialized = false;
     this.refreshPromise = null;
+    this.connectPromise = null;
     this.pollPromise = null;
     this.timer = null;
     this.lastTracksAt = 0;
@@ -121,6 +122,12 @@ class TrackClient {
     this.timer = setInterval(() => { if (this.credentials) this.sync(false).catch(() => {}); }, 20000);
   }
   async connect() {
+    if (this.connectPromise) return this.connectPromise;
+    this.connectPromise = this.connectOnce();
+    try { return await this.connectPromise; }
+    finally { this.connectPromise = null; }
+  }
+  async connectOnce() {
     if (this.credentials) return this.sync(true);
     const verifier = random(48);
     const epoch = ++this.epoch;
@@ -256,7 +263,10 @@ class TrackClient {
   }
   async sync(force = false) {
     if (!this.credentials) return;
-    if (this.pollPromise) return this.pollPromise;
+    if (this.pollPromise) {
+      await this.pollPromise;
+      return force ? this.sync(true) : undefined;
+    }
     const epoch = this.epoch;
     this.pollPromise = (async () => {
       try {
